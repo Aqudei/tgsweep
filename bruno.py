@@ -108,7 +108,7 @@ async def main():
 
         logger.info(
             "Kicking participants who joined during attacks date/time...")
-        async for participant in client.iter_participants(dialog, aggressive=True):
+        async for participant in client.iter_participants(dialog):
             participant_info = await client(GetParticipantRequest(dialog, participant))
             if isinstance(participant_info.participant, ChannelParticipantCreator):
                 continue
@@ -119,7 +119,7 @@ async def main():
                 removed = removed+1
 
         logger.info("Kicking BOT participants...")
-        async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots(), aggressive=True):
+        async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots()):
             participant_info = await client(GetParticipantRequest(dialog, participant))
             if isinstance(participant_info.participant, ChannelParticipantCreator):
                 continue
