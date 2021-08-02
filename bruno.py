@@ -110,11 +110,11 @@ async def main():
             participant_info = await client(GetParticipantRequest(dialog, participant))
             if isinstance(participant_info.participant, ChannelParticipantCreator):
                 continue
-            if within_attack_times(participant_info.participant.date):
-                logger.debug(
-                    f"Kicking {participant_info.users[0].first_name} {participant_info.users[0].last_name}")
-                await client.kick_participant(participant)
-                removed = removed+1
+            # if within_attack_times(participant_info.participant.date):
+            logger.debug(
+                f"Kicking {participant_info.users[0].first_name} {participant_info.users[0].last_name}")
+            await client.kick_participant(dialog, participant_info.participant.user_id)
+            removed = removed+1
 
         async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots()):
             participant_info = await client(GetParticipantRequest(dialog, participant))
@@ -123,8 +123,8 @@ async def main():
 
             logger.debug(
                 f"Kicking {participant_info.users[0].first_name} {participant_info.users[0].last_name}")
-            await client.kick_participant(participant)
-            removed = removed+1
+            await client.kick_participant(dialog, participant_info.participant.user_id)
+            removed = removed + 1
 
         logger.info(
             f"Removed <{removed}> participants from channel <{channel_name}>")
