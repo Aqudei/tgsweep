@@ -64,7 +64,7 @@ async def main():
             if not channel_name == config['channel_name']:
                 continue
 
-            with open('./users.csv', 'rt', newline='') as fp:
+            with open(options.dellist, 'rt', newline='') as fp:
                 reader = csv.reader(fp)
                 for id, fullname, username in reader:
                     client.kick_participant(dialog, id)
@@ -85,7 +85,7 @@ async def main():
             limit = 200
             offset = 0
 
-            with open('./users.csv', 'wt', newline='') as fp:
+            with open(options.genlist, 'wt', newline='') as fp:
                 writer = csv.writer(fp)
                 while added < config['limit']:
                     users = await client.iter_participants(dialog, limit=limit, offset=offset)
