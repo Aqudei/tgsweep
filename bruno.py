@@ -6,7 +6,13 @@ from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.functions.channels import GetFullChannelRequest, GetParticipantsRequest
 from telethon import types
 import pytz
+import argparse
 from datetime import datetime
+import logging
+
+logging.basicConfig(filename='./app.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
 
 with open("config.json", 'rt') as fp:
     config = json.loads(fp.read())
@@ -43,9 +49,14 @@ def with_attack_times(join_date):
 
 
 async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test", action='store_true')
+    options = parser.parse_args()
+
     removed = 0
     me = await client.get_me()
-    print(f"Looking up Channel <{config['channel_name']}>...")
+    logger.info(f"Looking up Channel <{config['channel_name']}>...")
+
     async for dialog in client.iter_dialogs():
         if not dialog.is_channel:
             continue
@@ -55,17 +66,18 @@ async def main():
         if not channel_name == config['channel_name']:
             continue
 
-        print(f"Found Target Channel:{channel_name}")
+        logger.info(f"Found Target Channel:{channel_name}")
 
         async for participant in client.iter_participants(dialog):
             if not with_attack_times(participant.date):
                 continue
 
-            print(f"Removing participant with id: <{participant.user_id}>")
-            await client.kick_participant(dialog, participant.user_id)
+            logger.info(f"Removing participant with id: <{participant.user_id}>")
+            if not options.test:
+                await client.kick_participant(dialog, participant.user_id)
             removed = removed + 1
 
-        print(f"Remove <{removed}> participants from channel <{channel_name}>")
+        logger.info(f"Removed <{removed}> participants from channel <{channel_name}>")
 
 with client:
     client.loop.run_until_complete(main())
