@@ -11,7 +11,7 @@ from datetime import datetime
 import logging
 import os
 
-from telethon.tl.types import ChannelParticipantsBots
+from telethon.tl.types import ChannelParticipantsBots, ChannelParticipantsRecent
 
 logging.basicConfig(filename='./app.log',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -70,26 +70,45 @@ async def main():
 
         if not channel_name.lower().strip() == config['channel_name'].lower().strip():
             continue
+        # def __init__(self, channel: 'TypeInputChannel', filter: 'TypeChannelParticipantsFilter', offset: int, limit: int, hash: int):
 
-        logger.info(f"Found Target Channel:{channel_name}!")
-        logger.info(f"Cleaning up suspected channel members...")
-        async for participant in client.iter_participants(dialog):
-            if not with_attack_times(participant.date):
-                continue
+        while True:
+            participants = await client(GetParticipantsRequest(
+                channel=dialog.name,
+                filter=types.ChannelParticipantsRecent(),
+                offset=0,
+                limit=200,
+                hash=0
+            ))
+            if participants.count <= 0:
+                break
 
-            logger.info(
-                f"Removing participant with id: <{participant.user_id}>")
-            if not test:
-                await client.kick_participant(dialog, participant.user_id)
-            removed = removed + 1
+            for participant in participants.participants:
+                if not with_attack_times(participant.date):
+                    continue
+                logger.info(
+                    f"Removing participant with id: <{participant.user_id}>")
+                if not test:
+                    await client.kick_participant(dialog, participant.user_id)
+                removed = removed + 1
 
-        logger.info(f"Removing remaining bots...")
-        async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots()):
-            logger.info(
-                f"Removing bot participant with id: <{participant.user_id}>")
-            if not test:
-                await client.kick_participant(dialog, participant.user_id)
-            removed = removed + 1
+        while True:
+            participants = await client(GetParticipantsRequest(
+                channel=dialog.name,
+                filter=types.ChannelParticipantsBots(),
+                offset=0,
+                limit=200,
+                hash=0
+            ))
+            if participants.count <= 0:
+                break
+
+            for participant in participants.participants:
+                logger.info(
+                    f"Removing participant with id: <{participant.user_id}>")
+                if not test:
+                    await client.kick_participant(dialog, participant.user_id)
+                removed = removed + 1
 
         logger.info(
             f"Removed <{removed}> participants from channel <{channel_name}>")
