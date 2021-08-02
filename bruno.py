@@ -29,7 +29,7 @@ with open("config.json", 'rt') as fp:
 # Remember to use your own values from my.telegram.org!
 api_id = config['api_id']
 api_hash = config['api_hash']
-
+test = config['test']
 client = TelegramClient('anon', api_id, api_hash)
 
 PARIS_TZ = pytz.timezone(config['timezone'])
@@ -57,11 +57,41 @@ def with_attack_times(join_date):
     return within_attack1 or within_attack2
 
 
-async def main():
+async def delete_participants(channel, filter, check_join_date=False):
+    """
+    docstring
+    """
     removed = 0
+    while True:
+        participants = await client(GetParticipantsRequest(
+            channel=channel,
+            filter=filter,
+            offset=0,
+            limit=200,
+            hash=0
+        ))
+
+        if participants.count <= 0:
+            break
+
+        for participant in participants.participants:
+            if check_join_date:
+                if not with_attack_times(participant.date):
+                    continue
+
+            logger.info(
+                f"Removing participant with id: <{participant.user_id}>")
+            if not test:
+                await client.kick_participant(channel, participant.user_id)
+            removed = removed + 1
+
+    return removed
+
+
+async def main():
     me = await client.get_me()
     logger.info(f"Looking up Channel <{config['channel_name']}>...")
-    test = config['test']
+
     async for dialog in client.iter_dialogs():
         if not dialog.is_channel:
             continue
@@ -72,46 +102,13 @@ async def main():
             continue
         # def __init__(self, channel: 'TypeInputChannel', filter: 'TypeChannelParticipantsFilter', offset: int, limit: int, hash: int):
 
-        while True:
-            participants = await client(GetParticipantsRequest(
-                channel=dialog.name,
-                filter=types.ChannelParticipantsRecent(),
-                offset=0,
-                limit=200,
-                hash=0
-            ))
-            if participants.count <= 0:
-                break
+        removed1 = delete_participants(
+            dialog, types.ChannelParticipantsRecent(), True)
 
-            for participant in participants.participants:
-                if not with_attack_times(participant.date):
-                    continue
-                logger.info(
-                    f"Removing participant with id: <{participant.user_id}>")
-                if not test:
-                    await client.kick_participant(dialog, participant.user_id)
-                removed = removed + 1
-
-        while True:
-            participants = await client(GetParticipantsRequest(
-                channel=dialog.name,
-                filter=types.ChannelParticipantsBots(),
-                offset=0,
-                limit=200,
-                hash=0
-            ))
-            if participants.count <= 0:
-                break
-
-            for participant in participants.participants:
-                logger.info(
-                    f"Removing participant with id: <{participant.user_id}>")
-                if not test:
-                    await client.kick_participant(dialog, participant.user_id)
-                removed = removed + 1
+        removed2 = delete_participants(dialog, types.ChannelParticipantsBots())
 
         logger.info(
-            f"Removed <{removed}> participants from channel <{channel_name}>")
+            f"Removed <{removed1 + removed2}> participants from channel <{channel_name}>")
 
 with client:
     client.loop.run_until_complete(main())
