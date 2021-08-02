@@ -124,7 +124,7 @@ async def main():
 
             logger.debug(
                 f"Kicking {participant.first_name} {participant.last_name}")
-            await client.kick_participant(dialog, participant.id)
+            await client.kick_participant(dialog, participant.user_id)
             removed = removed + 1
 
         logger.info(

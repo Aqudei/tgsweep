@@ -10,7 +10,7 @@ from telethon import types
 import pytz
 from datetime import datetime
 
-from telethon.tl.types import ChannelParticipantCreator, ChannelParticipantsBots
+from telethon.tl.types import ChannelParticipantCreator, ChannelParticipantsBots, ChannelParticipantsRecent, ChannelParticipantsSearch
 
 with open("config.json", 'rt') as fp:
     config = json.loads(fp.read())
@@ -46,78 +46,68 @@ def within_attack_times(join_date):
     return within_attack1 or within_attack2
 
 
+async def dellist(filename, channel):
+    with open(filename, 'rt') as fp:
+        reader = csv.reader(fp)
+        for user_id, first_name in reader:
+            client.kick_participant(channel, user_id)
+
+
+async def gen_list(filename, channel):
+    """
+    docstring
+    """
+    limit = 200
+    offset = 0
+    last_users = set()
+    with open(filename, 'wt', newline='') as fp:
+        writer = csv.writer(fp)
+        while True:
+            result = await client(GetParticipantsRequest(
+                channel=channel,
+                filter=ChannelParticipantsSearch(''),
+                offset=offset,
+                limit=limit,
+                hash=0
+            ))
+
+            if not result.participants or len(result.participants)==0:
+                print("No more participants found.")
+                break
+
+            for p, u in zip(result.participants, result.users):
+                if isinstance(p, ChannelParticipantCreator):
+                    continue
+                # if not within_attack_times(p):
+                #     continue
+                writer.writerow((p.user_id, u.first_name))
+            offset += len(result.participants)
+
+
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--genlist", help='Generate CSV file containing list of users to be kicked')
-    parser.add_argument("--dellist", help='Kick users from the given CSV file.')
+    parser.add_argument(
+        "--genlist", help='Generate CSV file containing list of users to be kicked')
+    parser.add_argument(
+        "--dellist", help='Kick users from the given CSV file.')
     options = parser.parse_args()
     me = await client.get_me()
     added = 0
 
-    if options.dellist:
-        async for dialog in client.iter_dialogs():
-            if not dialog.is_channel:
-                continue
+    async for dialog in client.iter_dialogs():
+        if not dialog.is_channel:
+            continue
 
-            channel_name = dialog.name
+        channel_name = dialog.name
 
-            if not channel_name == config['channel_name']:
-                continue
+        if not channel_name == config['channel_name']:
+            continue
 
-            with open(options.dellist, 'rt', newline='') as fp:
-                reader = csv.reader(fp)
-                for id, fullname, username in reader:
-                    client.kick_participant(dialog, id)
+        if options.genlist:
+            await gen_list(options.genlist, dialog)
+        if options.dellist:
+            await dellist(options.dellist, dialog)
 
-    if options.genlist:
-        print(f"Looking up Channel <{config['channel_name']}>...")
-        async for dialog in client.iter_dialogs():
-            if not dialog.is_channel:
-                continue
 
-            channel_name = dialog.name
-
-            if not channel_name == config['channel_name']:
-                continue
-
-            print(f"Found Target Channel:{channel_name}")
-
-            limit = 200
-            offset = 0
-
-            with open(options.genlist, 'wt', newline='') as fp:
-                writer = csv.writer(fp)
-                while added < config['limit']:
-                    users = await client.iter_participants(dialog, limit=limit, offset=offset)
-                    if len(users) <= 0:
-                        break
-
-                    for user in users:
-                        if isinstance(user.participant, ChannelParticipantCreator):
-                            continue
-                        participant = user.participant
-                        if not within_attack_times(participant.date):
-                            continue
-                        added = added + 1
-                        writer.writerow(
-                            (user.id, f"{user.first_name} {user.last_name}", f"{user.username}"))
-
-                    offset = offset + len(users)
-
-                offset = 0
-                while added < config['limit']:
-                    bot_users = await client.iter_participants(dialog, limit=limit, offset=offset, filter=ChannelParticipantsBots())
-                    if len(bot_users) <= 0:
-                        break
-
-                    for bot_user in bot_users:
-                        if isinstance(bot_user.participant, ChannelParticipantCreator):
-                            continue
-                        participant = bot_user.participant
-                        added = added + 1
-                        writer.writerow(
-                            (bot_user.id, f"{bot_user.first_name} {bot_user.last_name}", f"{bot_user.username}"))
-
-                    offset = offset + len(bot_users)
 with client:
     client.loop.run_until_complete(main())
