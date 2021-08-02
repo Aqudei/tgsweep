@@ -54,18 +54,18 @@ async def main():
 
         if not channel_name == config['channel_name']:
             continue
-
+        
         print(f"Found Target Channel:{channel_name}")
 
-        async for participant in client.iter_participants(dialog):
-            if not with_attack_times(participant.date):
-                continue
+        # async for participant in client.iter_participants(dialog):
+        #     if not with_attack_times(participant.date):
+        #         continue
 
-            print(f"Removing participant with id: <{participant.user_id}>")
-            await client.kick_participant(dialog, participant.user_id)
-            removed = removed + 1
+        #     print(f"Removing participant with id: <{participant.user_id}>")
+        #     await client.kick_participant(dialog, participant.user_id)
+        #     removed = removed + 1
 
-        print(f"Remove <{removed}> participants from channel <{channel_name}>")
+        # print(f"No more participants found from Channel: <{channel_name}>")
 
 with client:
     client.loop.run_until_complete(main())
