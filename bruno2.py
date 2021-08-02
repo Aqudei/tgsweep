@@ -48,8 +48,8 @@ def within_attack_times(join_date):
 
 async def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--genlist")
-    parser.add_argument("--dellist")
+    parser.add_argument("--genlist", help='Generate CSV file containing list of users to be kicked')
+    parser.add_argument("--dellist", help='Kick users from the given CSV file.')
     options = parser.parse_args()
     me = await client.get_me()
     added = 0
