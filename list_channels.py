@@ -3,7 +3,7 @@ from telethon import TelegramClient
 from telethon.tl.functions import channels
 import json
 from telethon.tl.functions.users import GetFullUserRequest
-from telethon.tl.functions.channels import GetFullChannelRequest, GetParticipantsRequest
+from telethon.tl.functions.channels import GetFullChannelRequest, GetParticipantRequest, GetParticipantsRequest
 from telethon import types
 import pytz
 from datetime import datetime
@@ -57,15 +57,10 @@ async def main():
         
         print(f"Found Target Channel:{channel_name}")
 
-        # async for participant in client.iter_participants(dialog):
-        #     if not with_attack_times(participant.date):
-        #         continue
+        async for participant in client.iter_participants(dialog):
+            print(participant)
 
-        #     print(f"Removing participant with id: <{participant.user_id}>")
-        #     await client.kick_participant(dialog, participant.user_id)
-        #     removed = removed + 1
-
-        # print(f"No more participants found from Channel: <{channel_name}>")
+        print(f"No more participants found from Channel: <{channel_name}>")
 
 with client:
     client.loop.run_until_complete(main())
