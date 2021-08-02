@@ -109,24 +109,22 @@ async def main():
         logger.info(
             "Kicking participants who joined during attacks date/time...")
         async for participant in client.iter_participants(dialog):
-            participant_info = await client(GetParticipantRequest(dialog, participant))
-            if isinstance(participant_info.participant, ChannelParticipantCreator):
+            if isinstance(participant.participant, ChannelParticipantCreator):
                 continue
-            if within_attack_times(participant_info.participant.date):
+            if within_attack_times(participant.participant.date):
                 logger.debug(
-                    f"Kicking {participant_info.users[0].first_name} {participant_info.users[0].last_name}")
-                await client.kick_participant(dialog, participant_info.participant.user_id)
+                    f"Kicking {participant.first_name} {participant.last_name}")
+                await client.kick_participant(dialog, participant.id)
                 removed = removed+1
 
         logger.info("Kicking BOT participants...")
         async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots()):
-            participant_info = await client(GetParticipantRequest(dialog, participant))
-            if isinstance(participant_info.participant, ChannelParticipantCreator):
+            if isinstance(participant.participant, ChannelParticipantCreator):
                 continue
 
             logger.debug(
-                f"Kicking {participant_info.users[0].first_name} {participant_info.users[0].last_name}")
-            await client.kick_participant(dialog, participant_info.participant.user_id)
+                f"Kicking {participant.first_name} {participant.last_name}")
+            await client.kick_participant(dialog, participant.id)
             removed = removed + 1
 
         logger.info(

@@ -58,7 +58,8 @@ async def main():
         print(f"Found Target Channel:{channel_name}")
 
         async for participant in client.iter_participants(dialog):
-            print(participant)
+            print(participant.stringify())
+            import pdb; pdb.set_trace()
 
         print(f"No more participants found from Channel: <{channel_name}>")
 
