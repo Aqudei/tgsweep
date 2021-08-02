@@ -105,9 +105,10 @@ async def main():
 
         if not channel_name.lower().strip() == config['channel_name'].lower().strip():
             continue
-        
-        logger.info("Kicking participants who joined during attacks date/time...")
-        async for participant in client.iter_participants(dialog):
+
+        logger.info(
+            "Kicking participants who joined during attacks date/time...")
+        async for participant in client.iter_participants(dialog, aggressive=True):
             participant_info = await client(GetParticipantRequest(dialog, participant))
             if isinstance(participant_info.participant, ChannelParticipantCreator):
                 continue
@@ -118,7 +119,7 @@ async def main():
                 removed = removed+1
 
         logger.info("Kicking BOT participants...")
-        async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots()):
+        async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots(), aggressive=True):
             participant_info = await client(GetParticipantRequest(dialog, participant))
             if isinstance(participant_info.participant, ChannelParticipantCreator):
                 continue
