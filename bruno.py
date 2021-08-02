@@ -14,8 +14,9 @@ import os
 from telethon.tl.types import ChannelParticipantsBots
 
 logging.basicConfig(filename='./app.log',
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 
 if not os.path.isfile('config.json'):
@@ -62,7 +63,11 @@ async def main():
     logger.info(f"Looking up Channel <{config['channel_name']}>...")
     test = config['test']
     async for dialog in client.iter_dialogs():
+        if not dialog.is_channel:
+            continue
+
         channel_name = dialog.name
+
         if not channel_name.lower().strip() == config['channel_name'].lower().strip():
             continue
 
