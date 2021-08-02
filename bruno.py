@@ -62,8 +62,6 @@ async def main():
             continue
 
         logger.info(f"Found Target Channel:{channel_name}!")
-        logger.info(f"Retrieving Participants list...")
-
         logger.info(f"Cleaning up suspected channel members...")
         async for participant in client.iter_participants(dialog):
             if not with_attack_times(participant.date):
@@ -75,7 +73,7 @@ async def main():
                 await client.kick_participant(dialog, participant.user_id)
             removed = removed + 1
 
-        logger.info(f"Removing remaning bots...")
+        logger.info(f"Removing remaining bots...")
         async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots()):
             logger.info(
                 f"Removing bot participant with id: <{participant.user_id}>")
