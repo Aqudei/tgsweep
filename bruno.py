@@ -10,6 +10,8 @@ import argparse
 from datetime import datetime
 import logging
 
+from telethon.tl.types import ChannelParticipantsBots
+
 logging.basicConfig(filename='./app.log',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -61,12 +63,22 @@ async def main():
 
         logger.info(f"Found Target Channel:{channel_name}!")
         logger.info(f"Retrieving Participants list...")
+
+        logger.info(f"Cleaning up suspected channel members...")
         async for participant in client.iter_participants(dialog):
             if not with_attack_times(participant.date):
                 continue
 
             logger.info(
                 f"Removing participant with id: <{participant.user_id}>")
+            if not test:
+                await client.kick_participant(dialog, participant.user_id)
+            removed = removed + 1
+
+        logger.info(f"Removing remaning bots...")
+        async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots()):
+            logger.info(
+                f"Removing bot participant with id: <{participant.user_id}>")
             if not test:
                 await client.kick_participant(dialog, participant.user_id)
             removed = removed + 1
