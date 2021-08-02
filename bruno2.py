@@ -50,54 +50,74 @@ async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--genlist")
     parser.add_argument("--dellist")
-
+    options = parser.parse_args()
     me = await client.get_me()
-    print(f"Looking up Channel <{config['channel_name']}>...")
-    async for dialog in client.iter_dialogs():
-        if not dialog.is_channel:
-            continue
+    added = 0
 
-        channel_name = dialog.name
+    if options.dellist:
+        async for dialog in client.iter_dialogs():
+            if not dialog.is_channel:
+                continue
 
-        if not channel_name == config['channel_name']:
-            continue
+            channel_name = dialog.name
 
-        print(f"Found Target Channel:{channel_name}")
+            if not channel_name == config['channel_name']:
+                continue
 
-        limit = 200
-        offset = 0
+            with open('./users.csv', 'rt', newline='') as fp:
+                reader = csv.reader(fp)
+                for id, fullname, username in reader:
+                    client.kick_participant(dialog, id)
 
-        with open('./users.csv', 'wt', newline='') as fp:
-            writer = csv.writer(fp)
-            while True:
-                users = await client.iter_participants(dialog, limit=limit, offset=offset)
-                if len(users) <= 0:
-                    break
+    if options.genlist:
+        print(f"Looking up Channel <{config['channel_name']}>...")
+        async for dialog in client.iter_dialogs():
+            if not dialog.is_channel:
+                continue
 
-                for user in users:
-                    if isinstance(user.participant, ChannelParticipantCreator):
-                        continue
-                    participant = user.participant
-                    if not within_attack_times(participant.date):
-                        continue
-                    writer.writerow(
-                        (user.id, f"{user.first_name} {user.last_name}", f"{user.username}"))
+            channel_name = dialog.name
 
-                offset = offset + len(users)
+            if not channel_name == config['channel_name']:
+                continue
 
+            print(f"Found Target Channel:{channel_name}")
+
+            limit = 200
             offset = 0
-            while True:
-                bot_users = await client.iter_participants(dialog, limit=limit, offset=offset, filter=ChannelParticipantsBots())
-                if len(bot_users) <= 0:
-                    break
 
-                for bot_user in bot_users:
-                    if isinstance(bot_user.participant, ChannelParticipantCreator):
-                        continue
-                    participant = bot_user.participant
-                    writer.writerow(
-                        (bot_user.id, f"{bot_user.first_name} {bot_user.last_name}", f"{bot_user.username}"))
+            with open('./users.csv', 'wt', newline='') as fp:
+                writer = csv.writer(fp)
+                while added < config['limit']:
+                    users = await client.iter_participants(dialog, limit=limit, offset=offset)
+                    if len(users) <= 0:
+                        break
 
-                offset = offset + len(bot_users)
+                    for user in users:
+                        if isinstance(user.participant, ChannelParticipantCreator):
+                            continue
+                        participant = user.participant
+                        if not within_attack_times(participant.date):
+                            continue
+                        added = added + 1
+                        writer.writerow(
+                            (user.id, f"{user.first_name} {user.last_name}", f"{user.username}"))
+
+                    offset = offset + len(users)
+
+                offset = 0
+                while added < config['limit']:
+                    bot_users = await client.iter_participants(dialog, limit=limit, offset=offset, filter=ChannelParticipantsBots())
+                    if len(bot_users) <= 0:
+                        break
+
+                    for bot_user in bot_users:
+                        if isinstance(bot_user.participant, ChannelParticipantCreator):
+                            continue
+                        participant = bot_user.participant
+                        added = added + 1
+                        writer.writerow(
+                            (bot_user.id, f"{bot_user.first_name} {bot_user.last_name}", f"{bot_user.username}"))
+
+                    offset = offset + len(bot_users)
 with client:
     client.loop.run_until_complete(main())
