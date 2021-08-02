@@ -110,6 +110,8 @@ async def main():
             if isinstance(participant_info, ChannelParticipantCreator):
                 continue
             if within_attack_times(participant_info.participant.date):
+                logger.debug(
+                    f"Kicking {participant_info.users[0].first_name} {participant_info.users[0].last_name}")
                 await client.kick_participant(participant)
                 removed = removed+1
 
@@ -118,6 +120,8 @@ async def main():
             if isinstance(participant_info, ChannelParticipantCreator):
                 continue
 
+            logger.debug(
+                f"Kicking {participant_info.users[0].first_name} {participant_info.users[0].last_name}")
             await client.kick_participant(participant)
             removed = removed+1
 
