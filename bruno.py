@@ -1,9 +1,9 @@
-from os import remove
+from os import path, remove
 from telethon import TelegramClient
 from telethon.tl.functions import channels
 import json
 from telethon.tl.functions.users import GetFullUserRequest
-from telethon.tl.functions.channels import GetFullChannelRequest, GetParticipantsRequest
+from telethon.tl.functions.channels import GetFullChannelRequest, GetParticipantsRequest, GetParticipantRequest
 from telethon import types
 import pytz
 import argparse
@@ -11,7 +11,7 @@ from datetime import datetime
 import logging
 import os
 
-from telethon.tl.types import ChannelParticipantsBots, ChannelParticipantsRecent
+from telethon.tl.types import ChannelParticipantCreator, ChannelParticipantsBots, ChannelParticipantsRecent
 
 logging.basicConfig(filename='./app.log',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -35,7 +35,7 @@ client = TelegramClient('anon', api_id, api_hash)
 PARIS_TZ = pytz.timezone(config['timezone'])
 
 
-def with_attack_times(join_date):
+def within_attack_times(join_date):
     """
     docstring
     """
@@ -71,12 +71,16 @@ async def delete_participants(channel, filter, check_join_date=False):
             hash=0
         ))
 
-        if participants.count <= 0:
-            break
+        if participants.count <= 1:
+            if not hasattr(participants[0], 'date'):
+                break
 
         for participant in participants.participants:
+            if isinstance(participant, ChannelParticipantCreator):
+                continue
+
             if check_join_date:
-                if not with_attack_times(participant.date):
+                if not within_attack_times(participant.date):
                     continue
 
             logger.info(
@@ -100,15 +104,25 @@ async def main():
 
         if not channel_name.lower().strip() == config['channel_name'].lower().strip():
             continue
-        # def __init__(self, channel: 'TypeInputChannel', filter: 'TypeChannelParticipantsFilter', offset: int, limit: int, hash: int):
 
-        removed1 = delete_participants(
-            dialog, types.ChannelParticipantsRecent(), True)
+        async for participant in client.iter_participants(dialog):
+            participant_info = await client(GetParticipantRequest(dialog, participant))
+            if isinstance(participant_info, ChannelParticipantCreator):
+                continue
+            if within_attack_times(participant_info.participant.date):
+                await client.kick_participant(participant)
+                removed = removed+1
 
-        removed2 = delete_participants(dialog, types.ChannelParticipantsBots())
+        async for participant in client.iter_participants(dialog, filter=ChannelParticipantsBots()):
+            participant_info = await client(GetParticipantRequest(dialog, participant))
+            if isinstance(participant_info, ChannelParticipantCreator):
+                continue
+
+            await client.kick_participant(participant)
+            removed = removed+1
 
         logger.info(
-            f"Removed <{removed1 + removed2}> participants from channel <{channel_name}>")
+            f"Removed <{removed}> participants from channel <{channel_name}>")
 
 with client:
     client.loop.run_until_complete(main())
