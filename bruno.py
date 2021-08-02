@@ -57,19 +57,13 @@ async def main():
 
         print(f"Found Target Channel:{channel_name}")
 
-        while True:
-            print(f"Retrieving Participants from channel <{channel_name}>...")
-            participants = list(await client.iter_participants(dialog))
-            if not participants or len(participants) <= 0:
-                break
+        async for participant in client.iter_participants(dialog):
+            if not with_attack_times(participant.date):
+                continue
 
-            for participant in participants:
-                if not with_attack_times(participant.date):
-                    continue
-
-                print(f"Removing participant with id: <{participant.user_id}>")
-                await client.kick_participant(dialog, participant.user_id)
-                removed = removed + 1
+            print(f"Removing participant with id: <{participant.user_id}>")
+            await client.kick_participant(dialog, participant.user_id)
+            removed = removed + 1
 
         print(f"No more participants found from Channel: <{channel_name}>")
 
