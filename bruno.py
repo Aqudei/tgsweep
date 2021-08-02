@@ -10,7 +10,8 @@ import argparse
 from datetime import datetime
 import logging
 
-logging.basicConfig(filename='./app.log', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(filename='./app.log',
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 
@@ -58,26 +59,24 @@ async def main():
     logger.info(f"Looking up Channel <{config['channel_name']}>...")
 
     async for dialog in client.iter_dialogs():
-        if not dialog.is_channel:
-            continue
-
         channel_name = dialog.name
-
-        if not channel_name == config['channel_name']:
+        if not channel_name.lower() == config['channel_name'].lower():
             continue
 
-        logger.info(f"Found Target Channel:{channel_name}")
-
+        logger.info(f"Found Target Channel:{channel_name}!")
+        logger.info(f"Retrieving Participants list...")
         async for participant in client.iter_participants(dialog):
             if not with_attack_times(participant.date):
                 continue
 
-            logger.info(f"Removing participant with id: <{participant.user_id}>")
+            logger.info(
+                f"Removing participant with id: <{participant.user_id}>")
             if not options.test:
                 await client.kick_participant(dialog, participant.user_id)
-            removed = removed + 1
+            removed=removed + 1
 
-        logger.info(f"Removed <{removed}> participants from channel <{channel_name}>")
+        logger.info(
+            f"Removed <{removed}> participants from channel <{channel_name}>")
 
 with client:
     client.loop.run_until_complete(main())
