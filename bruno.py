@@ -9,6 +9,7 @@ import pytz
 import argparse
 from datetime import datetime
 import logging
+import os
 
 from telethon.tl.types import ChannelParticipantsBots
 
@@ -16,6 +17,10 @@ logging.basicConfig(filename='./app.log',
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
+
+if not os.path.isfile('config.json'):
+    print("'config.json' was not found in the working directory. Please ask developer.")
+    exit(1)
 
 with open("config.json", 'rt') as fp:
     config = json.loads(fp.read())
@@ -58,7 +63,7 @@ async def main():
     test = config['test']
     async for dialog in client.iter_dialogs():
         channel_name = dialog.name
-        if not channel_name.lower() == config['channel_name'].lower():
+        if not channel_name.lower().strip() == config['channel_name'].lower().strip():
             continue
 
         logger.info(f"Found Target Channel:{channel_name}!")
