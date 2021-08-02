@@ -50,14 +50,10 @@ def with_attack_times(join_date):
 
 
 async def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--test", action='store_true')
-    options = parser.parse_args()
-
     removed = 0
     me = await client.get_me()
     logger.info(f"Looking up Channel <{config['channel_name']}>...")
-
+    test = config['test']
     async for dialog in client.iter_dialogs():
         channel_name = dialog.name
         if not channel_name.lower() == config['channel_name'].lower():
@@ -71,9 +67,9 @@ async def main():
 
             logger.info(
                 f"Removing participant with id: <{participant.user_id}>")
-            if not options.test:
+            if not test:
                 await client.kick_participant(dialog, participant.user_id)
-            removed=removed + 1
+            removed = removed + 1
 
         logger.info(
             f"Removed <{removed}> participants from channel <{channel_name}>")
