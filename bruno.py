@@ -93,6 +93,7 @@ async def delete_participants(channel, filter, check_join_date=False):
 
 
 async def main():
+    removed = 0
     me = await client.get_me()
     logger.info(f"Looking up Channel <{config['channel_name']}>...")
 
